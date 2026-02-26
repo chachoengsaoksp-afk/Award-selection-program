@@ -13,13 +13,12 @@
     .podium-2 { background: linear-gradient(180deg,#f5f5f5,#cfcfcf); }
     .podium-3 { background: linear-gradient(180deg,#fff0e6,#e0a96a); }
     .orange-txt { color: #fb6b2a; font-weight:700; }
-    @media (max-width:640px) {
-      .podium-grid { flex-direction: column; gap: 12px; }
-    }
+    @media (max-width:640px) { .podium-grid { flex-direction: column; gap: 12px; } }
   </style>
 </head>
 <body class="p-6">
 
+<!-- LOGIN -->
 <div id="loginBox" class="max-w-md mx-auto mt-8 glass rounded-xl p-6">
   <h2 class="text-2xl font-bold mb-4 text-center orange-txt">🎓 ระบบให้คะแนนกรรมการ</h2>
   <input id="user" placeholder="Username" class="w-full p-3 rounded-md border mb-3" />
@@ -27,6 +26,7 @@
   <button onclick="login()" class="w-full bg-gradient-to-r from-orange-400 to-orange-600 text-white font-semibold p-3 rounded-md">เข้าสู่ระบบ</button>
 </div>
 
+<!-- MAIN -->
 <div id="mainBox" class="hidden max-w-7xl mx-auto space-y-6">
 
   <div class="glass rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -37,6 +37,7 @@
     <div class="flex gap-2">
       <button onclick="downloadPDF()" class="px-3 py-2 rounded-md border bg-white text-orange-600">📄 ดาวน์โหลด PDF</button>
       <button id="btnShowAnn" onclick="openAnnouncementPanel()" class="px-3 py-2 rounded-md bg-orange-500 text-white">🎉 ประกาศผล</button>
+      <button onclick="showAdminLogin()" class="px-3 py-2 rounded-md border bg-white text-orange-600">⚙️ จัดการเกณฑ์</button>
       <button onclick="logout()" class="px-3 py-2 rounded-md border bg-white">ออกจากระบบ</button>
     </div>
   </div>
@@ -54,7 +55,14 @@
         <p><b>ประเภท:</b> <span id="infoType"></span></p>
       </div>
 
-      <input id="score" type="number" placeholder="กรอกคะแนน" class="w-full p-3 rounded-md border mb-3" />
+      <!-- criteria form -->
+      <div id="criteriaForm" class="space-y-3 mb-3"></div>
+
+      <div class="flex gap-2 items-center mb-3">
+        <div class="text-sm text-gray-600">คะแนนรวม:</div>
+        <div id="totalDisplay" class="text-lg font-bold text-orange-600">0</div>
+      </div>
+
       <button onclick="saveScore()" class="w-full bg-gradient-to-r from-orange-400 to-orange-600 text-white p-3 rounded-md font-semibold">บันทึกคะแนน</button>
     </div>
 
@@ -78,6 +86,48 @@
   </div>
 </div>
 
+<!-- Admin Login Modal -->
+<div id="adminLoginModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="font-bold">🔐 เข้าสู่ระบบผู้จัดการเกณฑ์</h3>
+      <button onclick="closeAdminLogin()" class="px-3 py-1 rounded-md border">ยกเลิก</button>
+    </div>
+    <div class="p-4">
+      <input id="adminUser" placeholder="Username" class="w-full p-2 border rounded-md mb-3">
+      <input id="adminPass" type="password" placeholder="Password" class="w-full p-2 border rounded-md mb-3">
+      <div class="flex gap-2 justify-end">
+        <button onclick="adminLogin()" class="px-4 py-2 bg-orange-500 text-white rounded-md">เข้าสู่ระบบ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- criteria manager modal -->
+<div id="criteriaModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-3xl bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between p-4 border-b">
+      <div><h3 class="font-bold">จัดการเกณฑ์ (ตัวชี้วัด) ต่อประเภท</h3><p class="text-sm text-gray-600">เพิ่ม/ลบตัวชี้วัด และกำหนดคะแนนสูงสุดและน้ำหนัก%</p></div>
+      <div class="flex gap-2">
+        <button onclick="closeCriteriaManager()" class="px-3 py-2 border rounded-md">ปิด</button>
+        <button onclick="saveCriteriaFromUI()" class="px-3 py-2 bg-orange-500 text-white rounded-md">บันทึกเกณฑ์</button>
+      </div>
+    </div>
+    <div class="p-4">
+      <label class="block mb-2 text-sm">เลือกประเภท</label>
+      <select id="criteriaType" class="w-full p-2 border rounded-md mb-4" onchange="loadCriteriaForType()"></select>
+
+      <div class="text-sm text-gray-600 mb-2">หมายเหตุ: **น้ำหนักรวมต้องเท่ากับ 100%**</div>
+      <div id="criteriaRows" class="space-y-2"></div>
+
+      <div class="mt-4">
+        <button onclick="addCriteriaRow()" class="px-3 py-2 bg-gray-100 rounded-md">+ เพิ่มตัวชี้วัด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- announcement panel -->
 <div id="announcementPanel" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-6xl bg-white rounded-xl shadow-2xl overflow-hidden">
     <div class="flex items-center justify-between p-4 border-b">
@@ -99,33 +149,316 @@
 </div>
 
 <script>
+/* ========== utility ========== */
 function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 
-let currentUser=""; let candidates=[]; let rankingData=[];
+/* ========== state ========== */
+let currentUser=""; let candidates=[]; let rankingData=[]; let criteriaList=[];
 
-function login(){ const u=(document.getElementById('user').value||"").toString().trim(); const p=(document.getElementById('pass').value||"").toString().trim(); if(!u||!p) return alert("กรุณากรอก username และ password"); google.script.run.withSuccessHandler(function(res){ if(res && res.success){ currentUser=res.name; document.getElementById('loginBox').classList.add('hidden'); document.getElementById('mainBox').classList.remove('hidden'); loadCandidates(); loadRanking(); } else { alert(res && res.message ? res.message : "เข้าสู่ระบบไม่สำเร็จ"); } }).checkLogin(u,p); }
-
+/* ========== Login (judge) ========== */
+function login(){
+  const u = (document.getElementById('user').value || "").toString().trim();
+  const p = (document.getElementById('pass').value || "").toString().trim();
+  if(!u||!p) return alert("กรุณากรอก username และ password");
+  google.script.run.withSuccessHandler(function(res){
+    if(res && res.success){
+      currentUser = res.name;
+      document.getElementById('loginBox').classList.add('hidden');
+      document.getElementById('mainBox').classList.remove('hidden');
+      loadCandidates(); loadAllCriteria(); loadRanking();
+    } else { alert(res && res.message ? res.message : "เข้าสู่ระบบไม่สำเร็จ"); }
+  }).checkLogin(u,p);
+}
 function logout(){ location.reload(); }
 
-function loadCandidates(){ google.script.run.withSuccessHandler(function(data){ candidates=data||[]; const sel=document.getElementById('candidate'); sel.innerHTML="<option value=''>-- เลือกผู้สมัคร --</option>"; for(let i=0;i<candidates.length;i++){ const c=candidates[i]; const txt=(c.name||"") + (c.type?(" — "+c.type):""); const opt=document.createElement('option'); opt.value=i; opt.innerText=txt; sel.appendChild(opt); } }).getCandidates(); }
+/* ========== Candidates ========== */
+function loadCandidates(){
+  google.script.run.withSuccessHandler(function(data){
+    candidates = data || [];
+    const sel = document.getElementById('candidate');
+    sel.innerHTML = "<option value=''>-- เลือกผู้สมัคร --</option>";
+    for(let i=0;i<candidates.length;i++){
+      const c=candidates[i];
+      const opt=document.createElement('option'); opt.value=i; opt.innerText= (c.name || "") + (c.type?(" — "+c.type):''); sel.appendChild(opt);
+    }
+  }).getCandidates();
+}
+function showInfo(){
+  const idx = document.getElementById('candidate').value;
+  if(idx === ""){ document.getElementById('infoBox').classList.add('hidden'); document.getElementById('criteriaForm').innerHTML=''; document.getElementById('totalDisplay').innerText='0'; return; }
+  const c = candidates[Number(idx)];
+  document.getElementById('infoBox').classList.remove('hidden');
+  document.getElementById('infoName').innerText = c.name || "";
+  document.getElementById('infoWork').innerText = c.work || "";
+  document.getElementById('infoType').innerText = c.type || "";
+  renderCriteriaFormForType(c.type);
+}
 
-function showInfo(){ const idx=document.getElementById('candidate').value; if(idx===""){ document.getElementById('infoBox').classList.add('hidden'); return; } const c=candidates[Number(idx)]; document.getElementById('infoBox').classList.remove('hidden'); document.getElementById('infoName').innerText=c.name||""; document.getElementById('infoWork').innerText=c.work||""; document.getElementById('infoType').innerText=c.type||""; }
+/* ========== Criteria (client) ========== */
+function loadAllCriteria(){
+  google.script.run.withSuccessHandler(function(data){
+    criteriaList = data || [];
+    populateCriteriaTypeSelect();
+  }).getCriteria();
+}
+function populateCriteriaTypeSelect(){
+  const sel = document.getElementById('criteriaType');
+  sel.innerHTML = "<option value=''>-- เลือกประเภท --</option>";
+  const types = Array.from(new Set(criteriaList.map(c=>c.type).concat(candidates.map(x=>x.type))));
+  types.forEach(function(t){ if(!t) return; const opt=document.createElement('option'); opt.value=t; opt.innerText=t; sel.appendChild(opt); });
+}
 
-function saveScore(){ const idx=document.getElementById('candidate').value; const score=document.getElementById('score').value; if(idx===""||score==="") return alert("กรุณาเลือกผู้สมัครและกรอกคะแนน"); const payload={ judge: currentUser || "กรรมการ", name: candidates[idx].name, work: candidates[idx].work, type: candidates[idx].type, score: Number(score) }; google.script.run.withSuccessHandler(function(res){ alert(res); document.getElementById('score').value=""; loadRanking(); }).submitScore(payload); }
+/* ========== Admin login flow ========== */
+function showAdminLogin(){ document.getElementById('adminLoginModal').classList.remove('hidden'); }
+function closeAdminLogin(){ document.getElementById('adminLoginModal').classList.add('hidden'); }
+function adminLogin(){
+  const u = (document.getElementById('adminUser').value||'').toString().trim();
+  const p = (document.getElementById('adminPass').value||'').toString().trim();
+  if(!u||!p) return alert('กรุณากรอกบัญชีผู้จัดการเกณฑ์');
+  google.script.run.withSuccessHandler(function(res){
+    if(res && res.status){
+      document.getElementById('adminLoginModal').classList.add('hidden');
+      openCriteriaManager();
+    } else {
+      alert(res && res.message ? res.message : 'เข้าสู่ระบบผู้จัดการเกณฑ์ไม่สำเร็จ');
+    }
+  }).adminLogin(u,p);
+}
 
+/* ========== Criteria Manager UI ========== */
+function openCriteriaManager(){
+  populateCriteriaTypeSelect();
+  document.getElementById('criteriaRows').innerHTML = '';
+  document.getElementById('criteriaModal').classList.remove('hidden');
+}
+function closeCriteriaManager(){ document.getElementById('criteriaModal').classList.add('hidden'); }
+
+function loadCriteriaForType(){
+  const type = document.getElementById('criteriaType').value;
+  const rowsDiv = document.getElementById('criteriaRows');
+  rowsDiv.innerHTML = '';
+  const rows = criteriaList.filter(c => c.type === type);
+  if(rows.length === 0){
+    addCriteriaRow();
+    return;
+  }
+  rows.forEach(function(r){
+    const wrapper = document.createElement('div'); wrapper.className = 'flex gap-2 items-center';
+    const name = document.createElement('input'); name.className='flex-1 p-2 border rounded-md'; name.value = r.name;
+    const max = document.createElement('input'); max.type='number'; max.className='w-28 p-2 border rounded-md'; max.value = r.max || 0;
+    const weight = document.createElement('input'); weight.type='number'; weight.className='w-28 p-2 border rounded-md'; weight.value = r.weight || 0;
+    const del = document.createElement('button'); del.className='px-3 py-2 bg-red-100 rounded-md'; del.innerText='ลบ';
+    del.onclick = function(){ wrapper.remove(); };
+    wrapper.appendChild(name);
+    wrapper.appendChild(max);
+    const wlabel = document.createElement('div'); wlabel.className='text-sm w-20 text-center'; wlabel.innerText='Weight %';
+    wrapper.appendChild(wlabel);
+    wrapper.appendChild(weight);
+    wrapper.appendChild(del);
+    rowsDiv.appendChild(wrapper);
+  });
+}
+
+function addCriteriaRow(){
+  const rowsDiv = document.getElementById('criteriaRows');
+  const wrapper = document.createElement('div'); wrapper.className = 'flex gap-2 items-center';
+  const name = document.createElement('input'); name.className='flex-1 p-2 border rounded-md'; name.placeholder='ชื่อ/หัวข้อวัด';
+  const max = document.createElement('input'); max.type='number'; max.className='w-28 p-2 border rounded-md'; max.placeholder='ค่าสูงสุด';
+  const weight = document.createElement('input'); weight.type='number'; weight.className='w-28 p-2 border rounded-md'; weight.placeholder='Weight%';
+  const del = document.createElement('button'); del.className='px-3 py-2 bg-red-100 rounded-md'; del.innerText='ลบ';
+  del.onclick = function(){ wrapper.remove(); };
+  const wlabel = document.createElement('div'); wlabel.className='text-sm w-20 text-center'; wlabel.innerText='Weight %';
+  wrapper.appendChild(name); wrapper.appendChild(max); wrapper.appendChild(wlabel); wrapper.appendChild(weight); wrapper.appendChild(del);
+  rowsDiv.appendChild(wrapper);
+}
+
+function saveCriteriaFromUI(){
+  const type = document.getElementById('criteriaType').value;
+  if(!type) return alert('กรุณาเลือกประเภทก่อนบันทึก');
+  const rowsDiv = document.getElementById('criteriaRows');
+  const arr = [];
+  let totalWeight = 0;
+  rowsDiv.querySelectorAll('div').forEach(function(div){
+    const inputsInside = div.querySelectorAll('input');
+    // inputsInside: [name, max, weight] or [name, max] depends; we arranged to have 3
+    if(inputsInside.length >= 3){
+      const nm = inputsInside[0].value || '';
+      const mx = Number(inputsInside[1].value) || 0;
+      const wt = Number(inputsInside[2].value) || 0;
+      if(nm.trim() !== ''){
+        arr.push({ name: nm.trim(), max: mx, weight: wt, status: 'เปิด' });
+        totalWeight += wt;
+      }
+    }
+  });
+  // validate totalWeight == 100 (allow small float tolerance)
+  if(arr.length > 0){
+    if(Math.abs(totalWeight - 100) > 0.01){
+      return alert("น้ำหนักรวมต้องเท่ากับ 100% — ตอนนี้รวม = " + totalWeight + "%\nโปรดปรับน้ำหนักแล้วลองใหม่");
+    }
+  } else {
+    return alert("กรุณาเพิ่มตัวชี้วัดก่อนบันทึก");
+  }
+
+  // call server; server also validates
+  google.script.run.withSuccessHandler(function(res){
+    if(res && res.success === false){
+      alert(res.message || 'ไม่สามารถบันทึกได้');
+    } else {
+      alert((res && res.message) || 'บันทึกเกณฑ์เรียบร้อย');
+      closeCriteriaManager();
+      loadAllCriteria();
+    }
+  }).saveCriteria(type, arr);
+}
+
+/* ========== Render scoring form for chosen candidate type ========== */
+function renderCriteriaFormForType(type){
+  const container = document.getElementById('criteriaForm');
+  container.innerHTML = '';
+  const list = criteriaList.filter(c => c.type === type);
+  if(!list || list.length === 0){
+    // legacy single score input
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = '<label class="text-sm text-gray-600">คะแนน (ไม่มีตัวชี้วัดกำหนด)</label><input id="legacyScore" type="number" class="w-full p-2 border rounded-md" />';
+    container.appendChild(wrapper);
+    document.getElementById('totalDisplay').innerText = '0';
+    return;
+  }
+  list.forEach(function(c){
+    const row = document.createElement('div'); row.className = 'flex items-center gap-2';
+    const lbl = document.createElement('div'); lbl.className='w-48 text-sm'; lbl.innerText = c.name + ' (max ' + c.max + ')';
+    const inp = document.createElement('input'); inp.type = 'number'; inp.className='flex-1 p-2 border rounded-md'; inp.min = 0; inp.max = c.max; inp.value = 0;
+    inp.oninput = computeTotalFromForm;
+    inp.dataset.critName = c.name;
+    inp.dataset.critMax = c.max;
+    inp.dataset.critWeight = c.weight || 0;
+    row.appendChild(lbl); row.appendChild(inp);
+    container.appendChild(row);
+  });
+  computeTotalFromForm();
+}
+
+function computeTotalFromForm(){
+  const container = document.getElementById('criteriaForm');
+  let total = 0;
+  let usingWeighted = false;
+  const inputs = container.querySelectorAll('input[type="number"]');
+  inputs.forEach(function(inp){
+    const v = Number(inp.value) || 0;
+    const max = Number(inp.dataset.critMax) || 0;
+    const wt = Number(inp.dataset.critWeight) || 0;
+    if(wt > 0 && max > 0){
+      usingWeighted = true;
+      total += (v / max) * wt; // weight is percent (0-100)
+    } else {
+      total += v;
+    }
+  });
+  if(usingWeighted){
+    // show as percent with 2 decimals
+    document.getElementById('totalDisplay').innerText = (Math.round(total*100)/100).toFixed(2) + ' %';
+    // store numeric total (0..100) in dataset for saving
+    container.dataset.lastTotal = (Math.round(total*100)/100).toFixed(2);
+    container.dataset.weighted = "1";
+  } else {
+    document.getElementById('totalDisplay').innerText = total;
+    container.dataset.lastTotal = total;
+    container.dataset.weighted = "0";
+  }
+}
+
+/* ========== Submit score (collect criteria) ========== */
+function saveScore(){
+  const idx = document.getElementById('candidate').value;
+  if(idx === "") return alert('กรุณาเลือกผู้สมัคร');
+  const c = candidates[Number(idx)];
+  const container = document.getElementById('criteriaForm');
+  const inputs = container.querySelectorAll('input[type="number"]');
+  const scoresObj = {};
+  let computedTotal = null;
+  if(inputs.length === 1 && document.getElementById('legacyScore')){
+    const v = Number(document.getElementById('legacyScore').value) || 0;
+    scoresObj['score'] = v;
+    computedTotal = v;
+  } else {
+    inputs.forEach(function(inp){
+      const name = inp.dataset.critName || ('c' + Math.random());
+      const v = Number(inp.value) || 0;
+      scoresObj[name] = v;
+    });
+    computedTotal = container.dataset.lastTotal !== undefined ? Number(container.dataset.lastTotal) : null;
+  }
+  const payload = { judge: currentUser || 'กรรมการ', name: c.name, work: c.work, type: c.type, scores: scoresObj };
+  if(computedTotal !== null) payload.total = computedTotal;
+  google.script.run.withSuccessHandler(function(res){ alert(res); loadRanking(); document.getElementById('totalDisplay').innerText='0'; }).submitScore(payload);
+}
+
+/* ========== Ranking (main table) ========= */
 function loadRanking(){ google.script.run.withSuccessHandler(function(data){ rankingData = data || []; renderMainRankTable(rankingData); document.getElementById('totalCount').innerText = rankingData.length; }).getFullRanking(); }
+function renderMainRankTable(data){
+  const tbody = document.getElementById('rankBody'); tbody.innerHTML = '';
+  if(!data || data.length === 0){ const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=6; td.className='p-4 text-center text-gray-600'; td.innerText='ยังไม่มีข้อมูล'; tr.appendChild(td); tbody.appendChild(tr); return; }
+  data.forEach(function(r){
+    const tr=document.createElement('tr'); tr.className='border-b';
+    const tdType=document.createElement('td'); tdType.className='p-3'; tdType.innerText = escapeHtml(r[0]); tr.appendChild(tdType);
+    const tdName=document.createElement('td'); tdName.className='p-3'; tdName.innerText = escapeHtml(r[1]); tr.appendChild(tdName);
+    const tdAvg=document.createElement('td'); tdAvg.className='p-3 text-right'; tdAvg.innerText = (r[2]===''? 'ยังไม่ได้รับการให้คะแนน' : r[2]); tr.appendChild(tdAvg);
+    const tdCount=document.createElement('td'); tdCount.className='p-3 text-right'; tdCount.innerText = (r[3]===''? '' : r[3]); tr.appendChild(tdCount);
+    const tdRank=document.createElement('td'); tdRank.className='p-3 text-center font-bold'; tdRank.innerText = (r[4]===''? 'ยังไม่ได้รับการให้คะแนน' : r[4]); tr.appendChild(tdRank);
+    const tdMedal=document.createElement('td'); tdMedal.className='p-3 text-center'; tdMedal.innerText = (r[5]||''); tr.appendChild(tdMedal);
+    tbody.appendChild(tr);
+  });
+}
 
-function renderMainRankTable(data){ const tbody=document.getElementById('rankBody'); tbody.innerHTML=""; if(!data||data.length===0){ const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=6; td.className="p-4 text-center text-gray-600"; td.innerText="ยังไม่มีข้อมูล"; tr.appendChild(td); tbody.appendChild(tr); return; } for(let i=0;i<data.length;i++){ const r=data[i]; const tr=document.createElement('tr'); tr.className="border-b"; const tdType=document.createElement('td'); tdType.className="p-3"; tdType.innerText = escapeHtml(r[0]); tr.appendChild(tdType); const tdName=document.createElement('td'); tdName.className="p-3"; tdName.innerText = escapeHtml(r[1]); tr.appendChild(tdName); const tdAvg=document.createElement('td'); tdAvg.className="p-3 text-right"; tdAvg.innerText = (r[2]===""? "ยังไม่ได้รับการให้คะแนน": r[2]); tr.appendChild(tdAvg); const tdCount=document.createElement('td'); tdCount.className="p-3 text-right"; tdCount.innerText = (r[3]===""? "": r[3]); tr.appendChild(tdCount); const tdRank=document.createElement('td'); tdRank.className="p-3 text-center font-bold"; tdRank.innerText = (r[4]===""? "ยังไม่ได้รับการให้คะแนน": r[4]); tr.appendChild(tdRank); const tdMedal=document.createElement('td'); tdMedal.className="p-3 text-center"; tdMedal.innerText = (r[5]||''); tr.appendChild(tdMedal); tbody.appendChild(tr); } }
+/* ========== Announcement panel (tabs) ========== */
+function openAnnouncementPanel(){ google.script.run.withSuccessHandler(function(data){ rankingData = data || []; if(rankingData.length === 0){ alert('ยังไม่มีผลการจัดอันดับ'); return; } buildAnnouncementTabs(rankingData); document.getElementById('announcementPanel').classList.remove('hidden'); window.scrollTo({top:0, behavior:'smooth'}); }).getFullRanking(); }
+function closeAnnouncementPanel(){ document.getElementById('announcementPanel').classList.add('hidden'); document.getElementById('tabsHeader').innerHTML=''; document.getElementById('tabsContent').innerHTML=''; document.getElementById('btnShowAnn').focus(); }
 
+function buildAnnouncementTabs(data){
+  const grouped={};
+  for(let i=0;i<data.length;i++){ const row=data[i]; const type=row[0]||'ไม่ระบุประเภท'; if(!grouped[type]) grouped[type]=[]; grouped[type].push(row); }
+  const types=Object.keys(grouped);
+  types.forEach(function(t){ grouped[t].sort(function(a,b){ return (parseFloat(b[2])||-1) - (parseFloat(a[2])||-1); }); });
+  const header=document.getElementById('tabsHeader'); const content=document.getElementById('tabsContent'); header.innerHTML=''; content.innerHTML='';
+  types.forEach(function(type, idx){
+    const btn=document.createElement('button'); btn.type='button'; btn.className='px-4 py-2 rounded-full border text-sm'; btn.innerText = type + ' (' + grouped[type].length + ')'; btn.dataset.idx=idx; btn.onclick=function(){ activateTab(idx); }; header.appendChild(btn);
+    const pane=document.createElement('div'); pane.id='pane-'+idx; pane.className='tab-pane hidden mt-4';
+    // podium
+    const podiumDiv=document.createElement('div'); podiumDiv.className='flex podium-grid gap-4 items-end justify-center mb-6';
+    const top=grouped[type].slice(0,3);
+    // second
+    const col2=document.createElement('div'); col2.className='w-full md:w-1/3 text-center';
+    if(top[1]){ const card=document.createElement('div'); card.className='p-4 rounded-md podium-2'; card.innerHTML = '<div class="text-sm">2</div><div class="text-lg font-bold">'+escapeHtml(top[1][1])+'</div><div class="text-sm">'+(top[1][2]===''? 'ยังไม่ได้รับการให้คะแนน': escapeHtml(top[1][2]) + ' คะแนน')+'</div>'; col2.appendChild(card); }
+    podiumDiv.appendChild(col2);
+    // first
+    const col1=document.createElement('div'); col1.className='w-full md:w-1/3 text-center';
+    if(top[0]){ const card=document.createElement('div'); card.className='p-6 rounded-md podium-1'; card.innerHTML = '<div class="text-sm">1</div><div class="text-2xl font-bold">'+escapeHtml(top[0][1])+'</div><div class="text-sm">'+(top[0][2]===''? 'ยังไม่ได้รับการให้คะแนน': escapeHtml(top[0][2]) + ' คะแนน')+'</div>'; col1.appendChild(card); }
+    podiumDiv.appendChild(col1);
+    // third
+    const col3=document.createElement('div'); col3.className='w-full md:w-1/3 text-center';
+    if(top[2]){ const card=document.createElement('div'); card.className='p-4 rounded-md podium-3'; card.innerHTML = '<div class="text-sm">3</div><div class="text-lg font-bold">'+escapeHtml(top[2][1])+'</div><div class="text-sm">'+(top[2][2]===''? 'ยังไม่ได้รับการให้คะแนน': escapeHtml(top[2][2]) + ' คะแนน')+'</div>'; col3.appendChild(card); }
+    podiumDiv.appendChild(col3);
+    pane.appendChild(podiumDiv);
+    // full table
+    const wrap=document.createElement('div'); wrap.className='overflow-auto max-h-96 bg-white rounded-md p-3';
+    const table=document.createElement('table'); table.className='w-full text-left';
+    const thead=document.createElement('thead'); thead.innerHTML = "<tr class='bg-orange-500 text-white'><th class='p-2 w-20'>ลำดับ</th><th class='p-2'>ชื่อ</th><th class='p-2 text-right w-36'>คะแนนเฉลี่ย</th><th class='p-2 text-right w-36'>กรรมการ</th><th class='p-2 text-center w-28'>รางวัล</th></tr>";
+    table.appendChild(thead);
+    const tbody=document.createElement('tbody');
+    grouped[type].forEach(function(r){ const tr=document.createElement('tr'); tr.className='border-t'; const tdRank=document.createElement('td'); tdRank.className='p-2'; tdRank.innerText = (r[4]===''? 'ยังไม่ได้รับการให้คะแนน': r[4]); const tdName=document.createElement('td'); tdName.className='p-2'; tdName.innerText = r[1]; const tdAvg=document.createElement('td'); tdAvg.className='p-2 text-right'; tdAvg.innerText = (r[2]===''? 'ยังไม่ได้รับการให้คะแนน': r[2]); const tdCount=document.createElement('td'); tdCount.className='p-2 text-right'; tdCount.innerText = (r[3]===''? '': r[3]); const tdMedal=document.createElement('td'); tdMedal.className='p-2 text-center'; tdMedal.innerText = (r[5]||''); tr.appendChild(tdRank); tr.appendChild(tdName); tr.appendChild(tdAvg); tr.appendChild(tdCount); tr.appendChild(tdMedal); tbody.appendChild(tr); });
+    table.appendChild(tbody); wrap.appendChild(table); pane.appendChild(wrap);
+    content.appendChild(pane);
+  });
+  if(types.length>0) activateTab(0);
+}
+function activateTab(i){ const header=document.getElementById('tabsHeader'); const buttons=header.querySelectorAll('button'); buttons.forEach((b,idx)=>{ if(idx===i){ b.classList.add('tab-active'); b.classList.remove('border'); } else { b.classList.remove('tab-active'); b.classList.add('border'); } }); const panes=document.querySelectorAll('.tab-pane'); panes.forEach((p,idx)=>{ if(idx===i) p.classList.remove('hidden'); else p.classList.add('hidden'); }); }
+
+/* ========== PDF ========= */
 function downloadPDF(){ google.script.run.withSuccessHandler(function(url){ if(url) window.open(url,'_blank'); else alert('ไม่สามารถสร้าง PDF ได้'); }).exportPDF(); }
 
-function openAnnouncementPanel(){ google.script.run.withSuccessHandler(function(data){ rankingData = data || []; if(rankingData.length === 0){ alert('ยังไม่มีผลการจัดอันดับ'); return; } buildAnnouncementTabs(rankingData); document.getElementById('announcementPanel').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }).getFullRanking(); }
-
-function closeAnnouncementPanel(){ document.getElementById('announcementPanel').classList.add('hidden'); document.getElementById('tabsHeader').innerHTML=""; document.getElementById('tabsContent').innerHTML=""; document.getElementById('btnShowAnn').focus(); }
-
-function buildAnnouncementTabs(data){ const grouped={}; for(let i=0;i<data.length;i++){ const row=data[i]; const type=row[0]||"ไม่ระบุประเภท"; if(!grouped[type]) grouped[type]=[]; grouped[type].push(row); } const types=Object.keys(grouped); types.forEach(function(t){ grouped[t].sort(function(a,b){ return (parseFloat(b[2])||-1) - (parseFloat(a[2])||-1); }); }); const header=document.getElementById('tabsHeader'); const content=document.getElementById('tabsContent'); header.innerHTML=""; content.innerHTML=""; types.forEach(function(type,idx){ const btn=document.createElement('button'); btn.type='button'; btn.className='px-4 py-2 rounded-full border text-sm'; btn.innerText=type+" ("+grouped[type].length+")"; btn.dataset.idx=idx; btn.onclick=function(){ activateTab(idx); }; header.appendChild(btn); const pane=document.createElement('div'); pane.id='pane-'+idx; pane.className='tab-pane hidden mt-4'; const podiumDiv=document.createElement('div'); podiumDiv.className='flex podium-grid gap-4 items-end justify-center mb-6'; const top=grouped[type].slice(0,3); const col2=document.createElement('div'); col2.className='w-full md:w-1/3 text-center'; if(top[1]){ const card=document.createElement('div'); card.className='p-4 rounded-md podium-2'; const rank=document.createElement('div'); rank.className='text-sm'; rank.innerText='2'; const name=document.createElement('div'); name.className='text-lg font-bold'; name.innerText=top[1][1]; const score=document.createElement('div'); score.className='text-sm'; score.innerText=top[1][2]===''? "ยังไม่ได้รับการให้คะแนน": top[1][2] + ' คะแนน'; card.appendChild(rank); card.appendChild(name); card.appendChild(score); col2.appendChild(card); } podiumDiv.appendChild(col2); const col1=document.createElement('div'); col1.className='w-full md:w-1/3 text-center'; if(top[0]){ const card=document.createElement('div'); card.className='p-6 rounded-md podium-1'; const rank=document.createElement('div'); rank.className='text-sm'; rank.innerText='1'; const name=document.createElement('div'); name.className='text-2xl font-bold'; name.innerText=top[0][1]; const score=document.createElement('div'); score.className='text-sm'; score.innerText=top[0][2]===''? "ยังไม่ได้รับการให้คะแนน": top[0][2] + ' คะแนน'; card.appendChild(rank); card.appendChild(name); card.appendChild(score); col1.appendChild(card); } podiumDiv.appendChild(col1); const col3=document.createElement('div'); col3.className='w-full md:w-1/3 text-center'; if(top[2]){ const card=document.createElement('div'); card.className='p-4 rounded-md podium-3'; const rank=document.createElement('div'); rank.className='text-sm'; rank.innerText='3'; const name=document.createElement('div'); name.className='text-lg font-bold'; name.innerText=top[2][1]; const score=document.createElement('div'); score.className='text-sm'; score.innerText=top[2][2]===''? "ยังไม่ได้รับการให้คะแนน": top[2][2] + ' คะแนน'; card.appendChild(rank); card.appendChild(name); card.appendChild(score); col3.appendChild(card); } podiumDiv.appendChild(col3); pane.appendChild(podiumDiv); const wrap=document.createElement('div'); wrap.className='overflow-auto max-h-96 bg-white rounded-md p-3'; const table=document.createElement('table'); table.className='w-full text-left'; const thead=document.createElement('thead'); thead.innerHTML="<tr class='bg-orange-500 text-white'><th class='p-2 w-20'>ลำดับ</th><th class='p-2'>ชื่อ</th><th class='p-2 text-right w-36'>คะแนนเฉลี่ย</th><th class='p-2 text-right w-36'>กรรมการ</th><th class='p-2 text-center w-28'>รางวัล</th></tr>"; table.appendChild(thead); const tbody=document.createElement('tbody'); grouped[type].forEach(function(r){ const tr=document.createElement('tr'); tr.className='border-t'; const tdRank=document.createElement('td'); tdRank.className='p-2'; tdRank.innerText = (r[4]===''? "ยังไม่ได้รับการให้คะแนน": r[4]); const tdName=document.createElement('td'); tdName.className='p-2'; tdName.innerText=r[1]; const tdAvg=document.createElement('td'); tdAvg.className='p-2 text-right'; tdAvg.innerText = (r[2]===''? "ยังไม่ได้รับการให้คะแนน": r[2]); const tdCount=document.createElement('td'); tdCount.className='p-2 text-right'; tdCount.innerText = (r[3]===''? "": r[3]); const tdMedal=document.createElement('td'); tdMedal.className='p-2 text-center'; tdMedal.innerText = (r[5]||''); tr.appendChild(tdRank); tr.appendChild(tdName); tr.appendChild(tdAvg); tr.appendChild(tdCount); tr.appendChild(tdMedal); tbody.appendChild(tr); }); table.appendChild(tbody); wrap.appendChild(table); pane.appendChild(wrap); content.appendChild(pane); }); if(types.length>0) activateTab(0); }
-function activateTab(i){ const header=document.getElementById('tabsHeader'); const buttons=header.querySelectorAll('button'); buttons.forEach((b,idx)=>{ if(idx===i){ b.classList.add('tab-active'); b.classList.remove('border'); } else { b.classList.remove('tab-active'); b.classList.add('border'); } }); const panes=document.querySelectorAll('.tab-pane'); panes.forEach((p,idx)=>{ if(idx===i) p.classList.remove('hidden'); else p.classList.add('hidden'); }); }
-document.addEventListener('DOMContentLoaded', function(){ const u=document.getElementById('user'); if(u) u.focus(); });
+/* ========== init ========= */
+document.addEventListener('DOMContentLoaded', function(){ const u=document.getElementById('user'); if(u) u.focus(); loadAllCriteria(); });
 </script>
 
 </body>
